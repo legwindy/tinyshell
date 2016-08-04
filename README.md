@@ -1,14 +1,13 @@
-# tinyshell
+# tinyshell - A Toy Unix Shell
 
-## OS
-* `Ubuntu 14.04`
+### OS
+* Ubuntu 14.04
 
-## 编译器
-* `gcc`
+###Compiler
+* gcc
 
-## 运行
+###How to use
 ```cmake
 make
-
 ./tinyshell
 ```
