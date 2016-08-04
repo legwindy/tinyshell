@@ -8,6 +8,8 @@
 #include <signal.h>
 #include <sys/wait.h>
 
+int is_background(char **);
+
 /*
  * purpose: run a program passing it arguments
  */
@@ -33,4 +35,19 @@ int execute(char *argv[]) {
 		}
 		return child_info;
 	}
+
+}
+
+int is_background(char *argv[]) {
+	char **argp = argv;
+	while(*argp != NULL){
+		argp++;
+	}
+	argp--;
+	if(strcmp(*argp, "&") == 0) {
+		*argp = NULL;
+		return 1;
+	}
+	return 0;
+
 }

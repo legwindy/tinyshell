@@ -13,84 +13,90 @@
  * purpose: read next command line from fp
  */
 char *next_cmd(char *prompt, FILE *fp) {
-	char *buf;        /*the buffer*/
-	int bufspace = 0;        /*total size*/
-	int pos = 0;        /*current position*/
 	int c;        /*input char*/
+	char *cmd_buf;        /*the buffer to store one line*/
+	int buf_size = 0;
+	int pos = 0;
 
 	printf("%s", prompt);
 	while((c = getc(fp)) != EOF) {
-		if(pos + 1 > bufspace) {
-			if(bufspace == 0) {
-				buf = emalloc(BUFSIZ);
-			}else {
-				buf = erealloc(buf, bufspace + BUFSIZ);
-			}
-			bufspace += BUFSIZ;
+		if(buf_size == 0) {
+			cmd_buf = emalloc(BUFSIZ);
+		}else if(pos + 1 >= buf_size) {
+			cmd_buf = erealloc(cmd_buf, buf_size + BUFSIZ);
 		}
+		buf_size += BUFSIZ;
 
 		if(c == '\n') {
 			break;
 		}
 
-		buf[pos++] = c;
+		cmd_buf[pos++] = c;
 	}
 
 	if(c == EOF && pos == 0) {
 		return NULL;
 	}
 
-	buf[pos] = '\0';
-	return buf;
+	cmd_buf[pos] = '\0';
+	return cmd_buf;
 }
 
 /*
  * purpose: split a line into array of white-space seperate tokens
  */
-char **splitline(char *line) {
-	char *newstr();
-	char **args;
-	int spots = 0;
-	int bufspace = 0;
-	int argnum = 0;
-	char *cp = line;
-	char *start;
-	int len;
+char **splitline(char *cmd_buf) {
+	char **arglist = NULL;        /*arglist: 参数指针数组*/
+	int arglist_size = 0;        /*the total memory space of arglist*/
+	int argnum = 0;        /*the number of arguments*/
 
-	if(line == NULL) {
-		return NULL;
-	}
+	char *argbuf = NULL;        /*argbuf: 用于单个参数*/
+	int argbuf_size = 0;        /*the total memory space of argbuf*/
+	int pos = 0;        /*当前参数的长度*/
 
-	args = emalloc(BUFSIZ);
-	bufspace = BUFSIZ;
-	spots = BUFSIZ / sizeof(char *);
-
-	while(*cp != '\0') {
+	char *cp = cmd_buf;
+	while((*cp != '\0')) {
 		while(is_delim(*cp)) {
 			cp++;
 		}
-		if(cp == '\0') {
+
+		if(*cp == '\0') {
 			break;
 		}
-
-		if(argnum + 1 > spots) {
-			args = erealloc(args, bufspace + BUFSIZ);
-			bufspace += BUFSIZ;
-			spots += (BUFSIZ / sizeof(char *));
-		}
-
-		start = cp;
-		len = 0;
-		while(*cp != '\0' && !is_delim(*cp)) {
-			len++;
+		
+		pos = 0;
+		argbuf_size = 0;
+		while(!is_delim(*cp)) {
+			if(pos + 1 >= argbuf_size) {
+				if(argbuf_size == 0) {
+					argbuf = (char*)malloc(BUFSIZ);
+				}else {
+					argbuf = (char*)realloc(argbuf, argbuf_size + BUFSIZ);
+				}
+				argbuf_size += BUFSIZ;
+			}
+			argbuf[pos++] = *cp;
 			cp++;
 		}
+		argbuf[pos] = '\0';
 
-		args[argnum++] = newstr(start, len);
+		if(argnum + 1 >= arglist_size) {
+			if(arglist_size == 0) {
+				arglist = (char**)malloc(BUFSIZ);
+			}else {
+				arglist = (char**)realloc(arglist, arglist_size + BUFSIZ);
+			}
+			arglist_size += BUFSIZ;
+		}
+		arglist[argnum++] = argbuf;
 	}
+	
+	if(argnum == 0) {        /*当直接输入'\n'时，需要分配内存*/
+		arglist = (char**)malloc(1);
+	}
+	arglist[argnum] = NULL;
 
-	args[argnum] = NULL;
-	return args;
+	return arglist;
 }
 
 /*
