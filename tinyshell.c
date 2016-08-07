@@ -15,18 +15,23 @@
 void setup();
 
 int main() {
-	char *cmdline, *prompt, **arglist;
+	char *linebuf, *prompt, **arglist;
+	char **cmd_array;
 	int result;
 
 	prompt = DFL_PROMPT;
 	setup();
 
-	while((cmdline = next_cmd(prompt, stdin)) != NULL) {
-		if((arglist = splitline(cmdline)) != NULL) {
-			result = execute(arglist);
-			freelist(arglist);
+	while((linebuf = next_line(prompt, stdin)) != NULL) {
+		cmd_array = splitline(linebuf);
+		int i = 0;
+		while(cmd_array[i] != NULL) {
+			if((arglist = splitcmd(cmd_array[i])) != NULL) {
+				result = execute(arglist);
+			}
+			i++;
 		}
-		free(cmdline);
+		freelist(cmd_array);
 	}
 	return 0;
 }

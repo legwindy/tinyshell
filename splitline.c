@@ -12,18 +12,18 @@
 /*
  * purpose: read next command line from fp
  */
-char *next_cmd(char *prompt, FILE *fp) {
+char *next_line(char *prompt, FILE *fp) {
 	int c;        /*input char*/
-	char *cmd_buf;        /*the buffer to store one line*/
+	char *line_buf;        /*the buffer to store one line*/
 	int buf_size = 0;
 	int pos = 0;
 
 	printf("%s", prompt);
 	while((c = getc(fp)) != EOF) {
 		if(buf_size == 0) {
-			cmd_buf = emalloc(BUFSIZ);
-		}else if(pos + 1 >= buf_size) {
-			cmd_buf = erealloc(cmd_buf, buf_size + BUFSIZ);
+			line_buf = emalloc(BUFSIZ);
+		}else if(pos + 1 >= buf_size / sizeof(char)) {
+			line_buf = erealloc(line_buf, buf_size + BUFSIZ);
 		}
 		buf_size += BUFSIZ;
 
@@ -31,21 +31,44 @@ char *next_cmd(char *prompt, FILE *fp) {
 			break;
 		}
 
-		cmd_buf[pos++] = c;
+		line_buf[pos++] = c;
 	}
 
 	if(c == EOF && pos == 0) {
 		return NULL;
 	}
 
-	cmd_buf[pos] = '\0';
-	return cmd_buf;
+	line_buf[pos] = '\0';
+	return line_buf;
 }
 
 /*
- * purpose: split a line into array of white-space seperate tokens
+ * porpose: split a line into an array of commands
+ * example: "who;pwd" => ["who", "pwd"]
  */
-char **splitline(char *cmd_buf) {
+char **splitline(char *linebuf) {
+	int array_size = BUFSIZ;
+	char **cmd_array = (char**)malloc(array_size);
+	int cmd_num = 0;
+	char *delim = ";";
+	cmd_array[cmd_num] = strtok(linebuf, delim);
+	while(cmd_array[cmd_num] != NULL) {
+		if(cmd_num + 1 >= array_size / sizeof(char*)) {
+			cmd_array = (char**)realloc(cmd_array, array_size + BUFSIZ);
+			array_size += BUFSIZ;
+		}
+		cmd_array[++cmd_num] = strtok(NULL, delim);
+	}
+
+	//cmd_array[cmd_num] = NULL;
+
+	return cmd_array;
+} 
+
+/*
+ * purpose: split a cmd into array of white-space seperate tokens
+ */
+char **splitcmd(char *cmd_buf) {
 	char **arglist = NULL;        /*arglist: 参数指针数组*/
 	int arglist_size = 0;        /*the total memory space of arglist*/
 	int argnum = 0;        /*the number of arguments*/
@@ -67,7 +90,7 @@ char **splitline(char *cmd_buf) {
 		pos = 0;
 		argbuf_size = 0;
 		while(!is_delim(*cp)) {
-			if(pos + 1 >= argbuf_size) {
+			if(pos + 1 >= argbuf_size / sizeof(char*)) {
 				if(argbuf_size == 0) {
 					argbuf = (char*)malloc(BUFSIZ);
 				}else {
@@ -92,7 +115,7 @@ char **splitline(char *cmd_buf) {
 	}
 	
 	if(argnum == 0) {        /*当直接输入'\n'时，需要分配内存*/
-		arglist = (char**)malloc(1);
+		arglist = (char**)malloc(sizeof(void*));
 	}
 	arglist[argnum] = NULL;
 
